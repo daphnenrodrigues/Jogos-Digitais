@@ -158,6 +158,7 @@ while run:
 	# Desenha o mundo na tela e atualiza a posição do jogador
 	world.draw()
 	player.update()
+	# Desenha o grid das imagens
 #	draw_grid()
 
 	for event in pygame.event.get():
