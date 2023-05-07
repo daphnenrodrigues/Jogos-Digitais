@@ -21,12 +21,12 @@ sun_image = pygame.image.load('assets/image/sun.png')
 background_image = pygame.image.load('assets/image/sky.png')
 
 # Desenha uma grade na tela do jogo de 50x50 pixels
-'''
+
 def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
-'''
+
 
 class Player():
 	def __init__(self, x, y):
@@ -159,7 +159,7 @@ while run:
 	world.draw()
 	player.update()
 	# Desenha o grid das imagens
-#	draw_grid()
+	draw_grid()
 
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
