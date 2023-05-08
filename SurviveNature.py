@@ -23,14 +23,13 @@ tile_size = 50
 sun_image = pygame.image.load('assets/image/sun.png')
 background_image = pygame.image.load('assets/image/sky.png')
 
-'''
-# Desenha uma grade na tela do jogo de 50x50 pixels
 
+# Desenha uma grade na tela do jogo de 50x50 pixels
 def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
-'''
+
 
 class Player():
 	def __init__(self, x, y):
@@ -50,6 +49,8 @@ class Player():
 		self.rect = self.image.get_rect()
 		self.rect.x = x
 		self.rect.y = y
+		self.width = self.image.get_width()
+		self.height = self.image.get_height()
 		# Define a velocidade vertical do jogador como 0
 		self.vel_y = 0
 		self.jumped = False
@@ -100,6 +101,22 @@ class Player():
 			self.vel_y = 10
 		dy += self.vel_y
 
+		# Adicionando colisão
+		for tile in world.tile_list:
+			# Verificando colisão no eixo x
+			if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+				dx = 0
+			# Verificando colisão no eixo y
+			if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+				# Verificando if below the ground i.e. jumping
+				if self.vel_y < 0:
+					dy = tile[1].bottom - self.rect.top
+					self.vel_y = 0
+				# Verificando if above the ground i.e. falling
+				elif self.vel_y >= 0:
+					dy = tile[1].top - self.rect.bottom
+					self.vel_y = 0
+
 		# Atualiza as coordenadas do jogador
 		self.rect.x += dx
 		self.rect.y += dy
@@ -110,6 +127,7 @@ class Player():
 
 		# Carrega o jogador na tela
 		screen.blit(self.image, self.rect)
+		pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
 
 
 class World():
@@ -152,6 +170,7 @@ class World():
 	def draw(self):
 		for tile in self.tile_list:
 			screen.blit(tile[0], tile[1])
+			pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
 
 
 # Matrix referente ao mapa, onde cada número representa uma imagem
