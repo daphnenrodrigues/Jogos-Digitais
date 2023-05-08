@@ -5,6 +5,9 @@ from pygame.locals import *
 # Inicialize o Pygame para que possa ser utilizado
 pygame.init()
 
+clock = pygame.time.Clock()
+fps = 60
+
 # Defina a largura e a altura da tela do jogo
 screen_width = 1000
 screen_height = 1000
@@ -20,19 +23,29 @@ tile_size = 50
 sun_image = pygame.image.load('assets/image/sun.png')
 background_image = pygame.image.load('assets/image/sky.png')
 
+'''
 # Desenha uma grade na tela do jogo de 50x50 pixels
 
 def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
-
+'''
 
 class Player():
 	def __init__(self, x, y):
-		# # Carrega a imagem do jogador e redimensiona a imagem para 40x80 pixels
-		image = pygame.image.load('assets/image/player.png')
-		self.image = pygame.transform.scale(image, (40, 80))
+		self.images_right = []
+		self.images_left = []
+		self.index = 0
+		self.counter = 0
+		# Carrega as imagens do jogador e redimensiona a imagem para 40x80 pixels
+		for num in range(1, 5):
+			image_right = pygame.image.load(f'assets/image/player{num}.png')
+			image_right = pygame.transform.scale(image_right, (40, 80))
+			image_left = pygame.transform.flip(image_right, True, False)
+			self.images_right.append(image_right)
+			self.images_left.append(image_left)
+		self.image = self.images_right[self.index]
 		# Cria um retângulo para o jogador e posiciona-o nas coordenadas x e y especificadas
 		self.rect = self.image.get_rect()
 		self.rect.x = x
@@ -40,10 +53,12 @@ class Player():
 		# Define a velocidade vertical do jogador como 0
 		self.vel_y = 0
 		self.jumped = False
+		self.direction = 0
 
 	def update(self):
 		dx = 0
 		dy = 0
+		walk_cooldown = 5
 
 		# Verifica se alguma tecla foi pressionada
 		key = pygame.key.get_pressed()
@@ -54,16 +69,36 @@ class Player():
 			self.jumped = False
 		if key[pygame.K_LEFT]:
 			dx -= 5
+			self.counter += 1
+			self.direction = -1
 		if key[pygame.K_RIGHT]:
 			dx += 5
+			self.counter += 1
+			self.direction = 1
+		if key[pygame.K_LEFT] == False and key[pygame.K_RIGHT] == False:
+			self.counter = 0
+			self.index = 0
+			if self.direction == 1:
+				self.image = self.images_right[self.index]
+			if self.direction == -1:
+				self.image = self.images_left[self.index]
+
+		# Animação
+		if self.counter > walk_cooldown:
+			self.counter = 0
+			self.index += 1
+			if self.index >= len(self.images_right):
+				self.index = 0
+			if self.direction == 1:
+				self.image = self.images_right[self.index]
+			if self.direction == -1:
+				self.image = self.images_left[self.index]
 
 		# Adiciona a gravidade à velocidade vertical do jogador e limita em 10
 		self.vel_y += 1
 		if self.vel_y > 10:
 			self.vel_y = 10
 		dy += self.vel_y
-
-
 
 		# Atualiza as coordenadas do jogador
 		self.rect.x += dx
@@ -121,26 +156,26 @@ class World():
 
 # Matrix referente ao mapa, onde cada número representa uma imagem
 world_data = [
-[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1],
-[1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 2, 2, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 7, 0, 5, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 1],
-[1, 7, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 7, 0, 0, 0, 0, 1],
-[1, 0, 2, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 2, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 1],
-[1, 0, 0, 0, 0, 0, 2, 2, 2, 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1],
-[1, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-[1, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-[1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+	[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1],
+	[1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 2, 2, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 7, 0, 5, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 1],
+	[1, 7, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 7, 0, 0, 0, 0, 1],
+	[1, 0, 2, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 2, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 1],
+	[1, 0, 0, 0, 0, 0, 2, 2, 2, 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1],
+	[1, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
 # Cria um objeto Player com posição inicial
@@ -151,6 +186,8 @@ world = World(world_data)
 run = True
 while run:
 
+	clock.tick(fps)
+
 	# Carregue as imagens a partir do diretório especificado
 	screen.blit(background_image, (0, 0))
 	screen.blit(sun_image, (100, 100))
@@ -159,7 +196,7 @@ while run:
 	world.draw()
 	player.update()
 	# Desenha o grid das imagens
-	draw_grid()
+#	draw_grid()
 
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
