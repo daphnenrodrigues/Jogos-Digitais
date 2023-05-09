@@ -64,29 +64,7 @@ class Button():
 
 class Player():
 	def __init__(self, x, y):
-		self.images_right = []
-		self.images_left = []
-		self.index = 0
-		self.counter = 0
-		# Carrega as imagens do jogador e redimensiona a imagem para 40x80 pixels
-		for num in range(1, 5):
-			image_right = pygame.image.load(f'assets/image/player{num}.png')
-			image_right = pygame.transform.scale(image_right, (40, 80))
-			image_left = pygame.transform.flip(image_right, True, False)
-			self.images_right.append(image_right)
-			self.images_left.append(image_left)
-		self.dead_image = pygame.image.load('assets/image/ghost.png')
-		self.image = self.images_right[self.index]
-		# Cria um retângulo para o jogador e posiciona-o nas coordenadas x e y especificadas
-		self.rect = self.image.get_rect()
-		self.rect.x = x
-		self.rect.y = y
-		self.width = self.image.get_width()
-		self.height = self.image.get_height()
-		# Define a velocidade vertical do jogador como 0
-		self.vel_y = 0
-		self.jumped = False
-		self.direction = 0
+		self.reset(x, y)
 
 	def update(self, game_over):
 		dx = 0
@@ -96,7 +74,7 @@ class Player():
 		if game_over == 0:
 			# Verifica se alguma tecla foi pressionada
 			key = pygame.key.get_pressed()
-			if key[pygame.K_SPACE] and self.jumped == False:
+			if key[pygame.K_SPACE] and self.jumped == False and self.in_air == False:
 				self.vel_y = -15
 				self.jumped = True
 			if not key[pygame.K_SPACE]:
@@ -135,20 +113,22 @@ class Player():
 			dy += self.vel_y
 
 			# Adicionando colisão
+			self.in_air = True
 			for tile in world.tile_list:
 				# Verificando colisão no eixo x
 				if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
 					dx = 0
 				# Verificando colisão no eixo y
 				if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
-					# Verificando if below the ground i.e. jumping
+					# Verificando se abaixo do solo, ou seja, pulando
 					if self.vel_y < 0:
 						dy = tile[1].bottom - self.rect.top
 						self.vel_y = 0
-					# Verificando if above the ground i.e. falling
+					# Verificando se está acima do solo, ou seja, caindo
 					elif self.vel_y >= 0:
 						dy = tile[1].top - self.rect.bottom
 						self.vel_y = 0
+						self.in_air = False
 
 			# Adicionando colisão com os inimigos
 			if pygame.sprite.spritecollide(self, enemy_group, False):
@@ -172,6 +152,32 @@ class Player():
 		pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
 
 		return game_over
+
+	def reset(self, x, y):
+		self.images_right = []
+		self.images_left = []
+		self.index = 0
+		self.counter = 0
+		# Carrega as imagens do jogador e redimensiona a imagem para 40x80 pixels
+		for num in range(1, 5):
+			image_right = pygame.image.load(f'assets/image/player{num}.png')
+			image_right = pygame.transform.scale(image_right, (40, 80))
+			image_left = pygame.transform.flip(image_right, True, False)
+			self.images_right.append(image_right)
+			self.images_left.append(image_left)
+		self.dead_image = pygame.image.load('assets/image/ghost.png')
+		self.image = self.images_right[self.index]
+		# Cria um retângulo para o jogador e posiciona-o nas coordenadas x e y especificadas
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.width = self.image.get_width()
+		self.height = self.image.get_height()
+		# Define a velocidade vertical do jogador como 0
+		self.vel_y = 0
+		self.jumped = False
+		self.direction = 0
+		self.in_air = True
 
 
 class World():
@@ -311,7 +317,9 @@ while run:
 
 	# Se o jogador morrer
 	if game_over == -1:
-		restart_button.draw()
+		if restart_button.draw():
+			player.reset(100, screen_height - 130)
+			game_over = 0
 
 	# Desenha o grid das imagens
 #	draw_grid()
