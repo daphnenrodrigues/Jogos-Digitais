@@ -163,6 +163,9 @@ class World():
 					img_rect.y = row_count * tile_size
 					tile = (img, img_rect)
 					self.tile_list.append(tile)
+				if tile == 3:
+					enemy = Enemy(col_count * tile_size, row_count * tile_size + 15)
+					enemy_group.add(enemy)
 				col_count += 1
 			row_count += 1
 
@@ -171,6 +174,24 @@ class World():
 		for tile in self.tile_list:
 			screen.blit(tile[0], tile[1])
 			pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
+
+
+class Enemy(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load('assets/image/enemy.png')
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.move_direction = 1
+		self.move_counter = 0
+
+	def update(self):
+		self.rect.x += self.move_direction
+		self.move_counter += 1
+		if abs(self.move_counter) > 50:
+			self.move_direction *= -1
+			self.move_counter *= -1
 
 
 # Matrix referente ao mapa, onde cada número representa uma imagem
@@ -199,6 +220,9 @@ world_data = [
 
 # Cria um objeto Player com posição inicial
 player = Player(100, screen_height - 130)
+
+enemy_group = pygame.sprite.Group()
+
 # Cria um objeto World com dados de mapa em 'world_data'
 world = World(world_data)
 
@@ -213,6 +237,8 @@ while run:
 
 	# Desenha o mundo na tela e atualiza a posição do jogador
 	world.draw()
+	enemy_group.update()
+	enemy_group.draw(screen)
 	player.update()
 	# Desenha o grid das imagens
 #	draw_grid()
