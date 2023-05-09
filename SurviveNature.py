@@ -23,6 +23,7 @@ game_over = 0
 # Carregue as imagens a partir do diretório especificado
 sun_image = pygame.image.load('assets/image/sun.png')
 background_image = pygame.image.load('assets/image/sky.png')
+restart_image = pygame.image.load('assets/image/restart_button.png')
 
 
 # Desenha uma grade na tela do jogo de 50x50 pixels
@@ -30,6 +31,35 @@ def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
+
+
+class Button():
+	def __init__(self, x, y, image):
+		self.image = image
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.clicked = False
+
+	def draw(self):
+		action = False
+
+		# Pegando a posição do mouse
+		pos = pygame.mouse.get_pos()
+
+		# Verificar as condições de clicar e se ele está em cima do botão
+		if self.rect.collidepoint(pos):
+			if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+				action = True
+				self.clicked = True
+
+		if pygame.mouse.get_pressed()[0] == 0:
+			self.clicked = False
+
+		# Adicionar botão na tela
+		screen.blit(self.image, self.rect)
+
+		return action
 
 
 class Player():
@@ -256,6 +286,8 @@ flood_water_group = pygame.sprite.Group()
 # Cria um objeto World com dados de mapa em 'world_data'
 world = World(world_data)
 
+restart_button = Button(screen_width // 2 - 50, screen_height // 2 + 100, restart_image)
+
 run = True
 while run:
 
@@ -268,6 +300,7 @@ while run:
 	# Desenha o mundo na tela e atualiza a posição do jogador
 	world.draw()
 
+	# Se o jogador estiver vivo
 	if game_over == 0:
 		enemy_group.update()
 
@@ -275,6 +308,10 @@ while run:
 	flood_water_group.draw(screen)
 
 	game_over = player.update(game_over)
+
+	# Se o jogador morrer
+	if game_over == -1:
+		restart_button.draw()
 
 	# Desenha o grid das imagens
 #	draw_grid()
