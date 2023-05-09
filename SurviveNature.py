@@ -45,6 +45,7 @@ class Player():
 			image_left = pygame.transform.flip(image_right, True, False)
 			self.images_right.append(image_right)
 			self.images_left.append(image_left)
+		self.dead_image = pygame.image.load('assets/image/ghost.png')
 		self.image = self.images_right[self.index]
 		# Cria um retângulo para o jogador e posiciona-o nas coordenadas x e y especificadas
 		self.rect = self.image.get_rect()
@@ -57,79 +58,90 @@ class Player():
 		self.jumped = False
 		self.direction = 0
 
-	def update(self):
+	def update(self, game_over):
 		dx = 0
 		dy = 0
 		walk_cooldown = 5
 
-		# Verifica se alguma tecla foi pressionada
-		key = pygame.key.get_pressed()
-		if key[pygame.K_SPACE] and self.jumped == False:
-			self.vel_y = -15
-			self.jumped = True
-		if not key[pygame.K_SPACE]:
-			self.jumped = False
-		if key[pygame.K_LEFT]:
-			dx -= 5
-			self.counter += 1
-			self.direction = -1
-		if key[pygame.K_RIGHT]:
-			dx += 5
-			self.counter += 1
-			self.direction = 1
-		if key[pygame.K_LEFT] == False and key[pygame.K_RIGHT] == False:
-			self.counter = 0
-			self.index = 0
-			if self.direction == 1:
-				self.image = self.images_right[self.index]
-			if self.direction == -1:
-				self.image = self.images_left[self.index]
-
-		# Animação
-		if self.counter > walk_cooldown:
-			self.counter = 0
-			self.index += 1
-			if self.index >= len(self.images_right):
+		if game_over == 0:
+			# Verifica se alguma tecla foi pressionada
+			key = pygame.key.get_pressed()
+			if key[pygame.K_SPACE] and self.jumped == False:
+				self.vel_y = -15
+				self.jumped = True
+			if not key[pygame.K_SPACE]:
+				self.jumped = False
+			if key[pygame.K_LEFT]:
+				dx -= 5
+				self.counter += 1
+				self.direction = -1
+			if key[pygame.K_RIGHT]:
+				dx += 5
+				self.counter += 1
+				self.direction = 1
+			if key[pygame.K_LEFT] == False and key[pygame.K_RIGHT] == False:
+				self.counter = 0
 				self.index = 0
-			if self.direction == 1:
-				self.image = self.images_right[self.index]
-			if self.direction == -1:
-				self.image = self.images_left[self.index]
+				if self.direction == 1:
+					self.image = self.images_right[self.index]
+				if self.direction == -1:
+					self.image = self.images_left[self.index]
 
-		# Adiciona a gravidade à velocidade vertical do jogador e limita em 10
-		self.vel_y += 1
-		if self.vel_y > 10:
-			self.vel_y = 10
-		dy += self.vel_y
+			# Animação
+			if self.counter > walk_cooldown:
+				self.counter = 0
+				self.index += 1
+				if self.index >= len(self.images_right):
+					self.index = 0
+				if self.direction == 1:
+					self.image = self.images_right[self.index]
+				if self.direction == -1:
+					self.image = self.images_left[self.index]
 
-		# Adicionando colisão
-		for tile in world.tile_list:
-			# Verificando colisão no eixo x
-			if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
-				dx = 0
-			# Verificando colisão no eixo y
-			if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
-				# Verificando if below the ground i.e. jumping
-				if self.vel_y < 0:
-					dy = tile[1].bottom - self.rect.top
-					self.vel_y = 0
-				# Verificando if above the ground i.e. falling
-				elif self.vel_y >= 0:
-					dy = tile[1].top - self.rect.bottom
-					self.vel_y = 0
+			# Adiciona a gravidade à velocidade vertical do jogador e limita em 10
+			self.vel_y += 1
+			if self.vel_y > 10:
+				self.vel_y = 10
+			dy += self.vel_y
 
+			# Adicionando colisão
+			for tile in world.tile_list:
+				# Verificando colisão no eixo x
+				if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+					dx = 0
+				# Verificando colisão no eixo y
+				if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+					# Verificando if below the ground i.e. jumping
+					if self.vel_y < 0:
+						dy = tile[1].bottom - self.rect.top
+						self.vel_y = 0
+					# Verificando if above the ground i.e. falling
+					elif self.vel_y >= 0:
+						dy = tile[1].top - self.rect.bottom
+						self.vel_y = 0
 
-		# Atualiza as coordenadas do jogador
-		self.rect.x += dx
-		self.rect.y += dy
+			# Adicionando colisão com os inimigos
+			if pygame.sprite.spritecollide(self, enemy_group, False):
+				game_over = -1
 
-		if self.rect.bottom > screen_height:
-			self.rect.bottom = screen_height
-			dy = 0
+			# Adicionando colisão com a água-suja
+			if pygame.sprite.spritecollide(self, flood_water_group, False):
+				game_over = -1
+
+			# Atualiza as coordenadas do jogador
+			self.rect.x += dx
+			self.rect.y += dy
+
+		elif game_over == -1:
+			self.image = self.dead_image
+			if self.rect.y > 200:
+				self.rect.y -= 5
 
 		# Carrega o jogador na tela
 		screen.blit(self.image, self.rect)
 		pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+
+		return game_over
 
 
 class World():
@@ -256,12 +268,14 @@ while run:
 	# Desenha o mundo na tela e atualiza a posição do jogador
 	world.draw()
 
-	enemy_group.update()
-	enemy_group.draw(screen)
+	if game_over == 0:
+		enemy_group.update()
 
+	enemy_group.draw(screen)
 	flood_water_group.draw(screen)
 
-	player.update()
+	game_over = player.update(game_over)
+
 	# Desenha o grid das imagens
 #	draw_grid()
 
