@@ -18,6 +18,7 @@ pygame.display.set_caption('SurviveNature')
 
 # Defina as variáveis do jogo
 tile_size = 50
+game_over = 0
 
 # Carregue as imagens a partir do diretório especificado
 sun_image = pygame.image.load('assets/image/sun.png')
@@ -117,6 +118,7 @@ class Player():
 					dy = tile[1].top - self.rect.bottom
 					self.vel_y = 0
 
+
 		# Atualiza as coordenadas do jogador
 		self.rect.x += dx
 		self.rect.y += dy
@@ -166,6 +168,10 @@ class World():
 				if tile == 3:
 					enemy = Enemy(col_count * tile_size, row_count * tile_size + 15)
 					enemy_group.add(enemy)
+				if tile == 6:
+					flood_water = FloodWater(col_count * tile_size, row_count * tile_size + (tile_size // 2))
+					flood_water_group.add(flood_water)
+
 				col_count += 1
 			row_count += 1
 
@@ -192,6 +198,17 @@ class Enemy(pygame.sprite.Sprite):
 		if abs(self.move_counter) > 50:
 			self.move_direction *= -1
 			self.move_counter *= -1
+
+
+class FloodWater(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		image = pygame.image.load('assets/image/floodWater.png')
+		self.image = pygame.transform.scale(image, (tile_size, tile_size // 2))
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+
 
 
 # Matrix referente ao mapa, onde cada número representa uma imagem
@@ -222,6 +239,7 @@ world_data = [
 player = Player(100, screen_height - 130)
 
 enemy_group = pygame.sprite.Group()
+flood_water_group = pygame.sprite.Group()
 
 # Cria um objeto World com dados de mapa em 'world_data'
 world = World(world_data)
@@ -237,8 +255,12 @@ while run:
 
 	# Desenha o mundo na tela e atualiza a posição do jogador
 	world.draw()
+
 	enemy_group.update()
 	enemy_group.draw(screen)
+
+	flood_water_group.draw(screen)
+
 	player.update()
 	# Desenha o grid das imagens
 #	draw_grid()
