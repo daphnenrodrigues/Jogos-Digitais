@@ -19,11 +19,14 @@ pygame.display.set_caption('SurviveNature')
 # Defina as variáveis do jogo
 tile_size = 50
 game_over = 0
+main_menu = True
 
 # Carregue as imagens a partir do diretório especificado
 sun_image = pygame.image.load('assets/image/sun.png')
 background_image = pygame.image.load('assets/image/sky.png')
 restart_image = pygame.image.load('assets/image/restart_button.png')
+start_image = pygame.image.load('assets/image/start_button.png')
+exit_image = pygame.image.load('assets/image/exit_button.png')
 
 
 # Desenha uma grade na tela do jogo de 50x50 pixels
@@ -293,6 +296,8 @@ flood_water_group = pygame.sprite.Group()
 world = World(world_data)
 
 restart_button = Button(screen_width // 2 - 50, screen_height // 2 + 100, restart_image)
+start_button = Button(screen_width // 2 - 350, screen_height // 2, start_image)
+exit_button = Button(screen_width // 2 + 150, screen_height // 2, exit_image)
 
 run = True
 while run:
@@ -303,23 +308,29 @@ while run:
 	screen.blit(background_image, (0, 0))
 	screen.blit(sun_image, (100, 100))
 
-	# Desenha o mundo na tela e atualiza a posição do jogador
-	world.draw()
+	if main_menu == True:
+		if exit_button.draw():
+			run = False
+		if start_button.draw():
+			main_menu = False
+	else:
+		# Desenha o mundo na tela e atualiza a posição do jogador
+		world.draw()
 
-	# Se o jogador estiver vivo
-	if game_over == 0:
-		enemy_group.update()
+		# Se o jogador estiver vivo
+		if game_over == 0:
+			enemy_group.update()
 
-	enemy_group.draw(screen)
-	flood_water_group.draw(screen)
+		enemy_group.draw(screen)
+		flood_water_group.draw(screen)
 
-	game_over = player.update(game_over)
+		game_over = player.update(game_over)
 
-	# Se o jogador morrer
-	if game_over == -1:
-		if restart_button.draw():
-			player.reset(100, screen_height - 130)
-			game_over = 0
+		# Se o jogador morrer
+		if game_over == -1:
+			if restart_button.draw():
+				player.reset(100, screen_height - 130)
+				game_over = 0
 
 	# Desenha o grid das imagens
 #	draw_grid()
