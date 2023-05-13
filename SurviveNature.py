@@ -1,5 +1,7 @@
 # Importe o módulo Pygame para utilizar suas funcionalidades
 import pygame
+import pickle
+from os import path
 from pygame.locals import *
 
 # Inicialize o Pygame para que possa ser utilizado
@@ -20,6 +22,8 @@ pygame.display.set_caption('SurviveNature')
 tile_size = 50
 game_over = 0
 main_menu = True
+level = 0
+max_levels = 7
 
 # Carregue as imagens a partir do diretório especificado
 sun_image = pygame.image.load('assets/image/sun.png')
@@ -34,6 +38,22 @@ def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
+
+
+# Função para resetar a fase
+def reset_level(level):
+	player.reset(100, screen_height - 130)
+	enemy_group.empty()
+	flood_water_group.empty()
+	exit_group.empty()
+
+	# Cria um objeto World com dados de mapa em 'world_data'
+	if path.exists(f'assets/level_data/level{level}_data'):
+		pickle_in = open(f'assets/level_data/level{level}_data', 'rb')
+		world_data = pickle.load(pickle_in)
+	world = World(world_data)
+
+	return world
 
 
 class Button():
@@ -141,6 +161,11 @@ class Player():
 			if pygame.sprite.spritecollide(self, flood_water_group, False):
 				game_over = -1
 
+			# Adicionando colisão com a porta de troca de level
+			if pygame.sprite.spritecollide(self, exit_group, False):
+				game_over = 1
+
+
 			# Atualiza as coordenadas do jogador
 			self.rect.x += dx
 			self.rect.y += dy
@@ -222,6 +247,9 @@ class World():
 				if tile == 6:
 					flood_water = FloodWater(col_count * tile_size, row_count * tile_size + (tile_size // 2))
 					flood_water_group.add(flood_water)
+				if tile == 8:
+					exit = Exit(col_count * tile_size, row_count * tile_size - (tile_size // 2))
+					exit_group.add(exit)
 
 				col_count += 1
 			row_count += 1
@@ -261,38 +289,28 @@ class FloodWater(pygame.sprite.Sprite):
 		self.rect.y = y
 
 
+class Exit(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		image = pygame.image.load('assets/image/exitLevel.png')
+		self.image = pygame.transform.scale(image, (tile_size, int(tile_size * 1.5)))
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
 
-# Matrix referente ao mapa, onde cada número representa uma imagem
-world_data = [
-	[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1],
-	[1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 2, 2, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 7, 0, 5, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 1],
-	[1, 7, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 7, 0, 0, 0, 0, 1],
-	[1, 0, 2, 0, 0, 7, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 0, 0, 2, 0, 0, 4, 0, 0, 0, 0, 3, 0, 0, 3, 0, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 2, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 1],
-	[1, 0, 0, 0, 0, 0, 2, 2, 2, 6, 6, 6, 6, 6, 1, 1, 1, 1, 1, 1],
-	[1, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	[1, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-	[1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-]
 
 # Cria um objeto Player com posição inicial
 player = Player(100, screen_height - 130)
 
 enemy_group = pygame.sprite.Group()
 flood_water_group = pygame.sprite.Group()
+exit_group = pygame.sprite.Group()
+
 
 # Cria um objeto World com dados de mapa em 'world_data'
+if path.exists(f'assets/level_data/level{level}_data'):
+	pickle_in = open(f'assets/level_data/level{level}_data', 'rb')
+	world_data = pickle.load(pickle_in)
 world = World(world_data)
 
 restart_button = Button(screen_width // 2 - 50, screen_height // 2 + 100, restart_image)
@@ -323,14 +341,35 @@ while run:
 
 		enemy_group.draw(screen)
 		flood_water_group.draw(screen)
+		exit_group.draw(screen)
 
 		game_over = player.update(game_over)
 
 		# Se o jogador morrer
 		if game_over == -1:
 			if restart_button.draw():
-				player.reset(100, screen_height - 130)
+				world_data = []
+				world = reset_level(level)
 				game_over = 0
+
+		# Se o jogador ganhar a fase
+		if game_over == 1:
+		# Resetar o jogo e ir para a proxima fase
+			level += 1
+			if level <= max_levels:
+				# Resetar fase
+				world_data = []
+				world = reset_level(level)
+				game_over = 0
+			else:
+				# Resetar o jogo
+				if restart_button.draw():
+					level = 1
+					# Resetar fase
+					world_data = []
+					world = reset_level(level)
+					game_over = 0
+
 
 	# Desenha o grid das imagens
 #	draw_grid()
