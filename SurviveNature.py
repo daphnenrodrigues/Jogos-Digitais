@@ -18,12 +18,21 @@ screen_height = 1000
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('SurviveNature')
 
+# Definido fonte
+font = pygame.font.SysFont('Bauhaus 93', 70)
+font_score = pygame.font.SysFont('Bauhaus 93', 30)
+
 # Defina as variáveis do jogo
 tile_size = 50
 game_over = 0
 main_menu = True
 level = 0
-max_levels = 7
+max_levels = 1
+score = 0
+
+# Definindo cores
+white = (255, 255, 255)
+blue = (0, 0, 255)
 
 # Carregue as imagens a partir do diretório especificado
 sun_image = pygame.image.load('assets/image/sun.png')
@@ -38,6 +47,11 @@ def draw_grid():
 	for line in range(0, 20):
 		pygame.draw.line(screen, (255, 255, 255), (0, line * tile_size), (screen_width, line * tile_size))
 		pygame.draw.line(screen, (255, 255, 255), (line * tile_size, 0), (line * tile_size, screen_height))
+
+
+def draw_text(text, font, text_col, x, y):
+	image = font.render(text, True, text_col)
+	screen.blit(image, (x, y))
 
 
 # Função para resetar a fase
@@ -172,6 +186,7 @@ class Player():
 
 		elif game_over == -1:
 			self.image = self.dead_image
+			draw_text('Você Perdeu!', font, blue, (screen_width // 2) - 200, screen_height // 2)
 			if self.rect.y > 200:
 				self.rect.y -= 5
 
@@ -247,6 +262,9 @@ class World():
 				if tile == 6:
 					flood_water = FloodWater(col_count * tile_size, row_count * tile_size + (tile_size // 2))
 					flood_water_group.add(flood_water)
+				if tile == 7:
+					coin = Coin(col_count * tile_size + (tile_size // 2), row_count * tile_size + (tile_size // 2))
+					coin_group.add(coin)
 				if tile == 8:
 					exit = Exit(col_count * tile_size, row_count * tile_size - (tile_size // 2))
 					exit_group.add(exit)
@@ -289,6 +307,15 @@ class FloodWater(pygame.sprite.Sprite):
 		self.rect.y = y
 
 
+class Coin(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		image = pygame.image.load('assets/image/coin.png')
+		self.image = pygame.transform.scale(image, (tile_size // 2, tile_size // 2))
+		self.rect = self.image.get_rect()
+		self.rect.center = (x, y)
+
+
 class Exit(pygame.sprite.Sprite):
 	def __init__(self, x, y):
 		pygame.sprite.Sprite.__init__(self)
@@ -304,8 +331,12 @@ player = Player(100, screen_height - 130)
 
 enemy_group = pygame.sprite.Group()
 flood_water_group = pygame.sprite.Group()
+coin_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 
+# Criando moeda fictícia para mostrar na pontuação
+score_coin = Coin(tile_size // 2, tile_size // 2)
+coin_group.add(score_coin)
 
 # Cria um objeto World com dados de mapa em 'world_data'
 if path.exists(f'assets/level_data/level{level}_data'):
@@ -338,9 +369,15 @@ while run:
 		# Se o jogador estiver vivo
 		if game_over == 0:
 			enemy_group.update()
+			# Atualizando a pontuação
+			# Verifica se o item foi coletado
+			if pygame.sprite.spritecollide(player, coin_group, True):
+				score += 1
+			draw_text(' X ' + str(score), font_score, white, tile_size - 10, 10)
 
 		enemy_group.draw(screen)
 		flood_water_group.draw(screen)
+		coin_group.draw(screen)
 		exit_group.draw(screen)
 
 		game_over = player.update(game_over)
@@ -351,6 +388,7 @@ while run:
 				world_data = []
 				world = reset_level(level)
 				game_over = 0
+				score = 0
 
 		# Se o jogador ganhar a fase
 		if game_over == 1:
@@ -362,6 +400,7 @@ while run:
 				world = reset_level(level)
 				game_over = 0
 			else:
+				draw_text('Você Ganhou!', font, blue, (screen_width // 2) - 200, screen_height // 2)
 				# Resetar o jogo
 				if restart_button.draw():
 					level = 1
@@ -369,6 +408,7 @@ while run:
 					world_data = []
 					world = reset_level(level)
 					game_over = 0
+					score = 0
 
 
 	# Desenha o grid das imagens
