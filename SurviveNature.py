@@ -2,9 +2,12 @@
 import pygame
 import pickle
 from os import path
+from pygame import mixer
 from pygame.locals import *
 
 # Inicialize o Pygame para que possa ser utilizado
+pygame.mixer.pre_init(44100, -16, 2, 512)
+mixer.init()
 pygame.init()
 
 clock = pygame.time.Clock()
@@ -41,6 +44,15 @@ restart_image = pygame.image.load('assets/image/restart_button.png')
 start_image = pygame.image.load('assets/image/start_button.png')
 exit_image = pygame.image.load('assets/image/exit_button.png')
 
+# Carregue os sons do jogo
+pygame.mixer.music.load('assets/audio/music.wav')
+pygame.mixer.music.play(-1, 0.0, 5000)
+coin_effect = pygame.mixer.Sound('assets/audio/coin.wav')
+coin_effect.set_volume(0.5)
+jump_effect = pygame.mixer.Sound('assets/audio/jump.wav')
+jump_effect.set_volume(0.5)
+game_over_effect = pygame.mixer.Sound('assets/audio/game_over.wav')
+game_over_effect.set_volume(0.5)
 
 # Desenha uma grade na tela do jogo de 50x50 pixels
 def draw_grid():
@@ -112,6 +124,7 @@ class Player():
 			# Verifica se alguma tecla foi pressionada
 			key = pygame.key.get_pressed()
 			if key[pygame.K_SPACE] and self.jumped == False and self.in_air == False:
+				jump_effect.play()
 				self.vel_y = -15
 				self.jumped = True
 			if not key[pygame.K_SPACE]:
@@ -170,10 +183,12 @@ class Player():
 			# Adicionando colisão com os inimigos
 			if pygame.sprite.spritecollide(self, enemy_group, False):
 				game_over = -1
+				game_over_effect.play()
 
 			# Adicionando colisão com a água-suja
 			if pygame.sprite.spritecollide(self, flood_water_group, False):
 				game_over = -1
+				game_over_effect.play()
 
 			# Adicionando colisão com a porta de troca de level
 			if pygame.sprite.spritecollide(self, exit_group, False):
@@ -373,6 +388,7 @@ while run:
 			# Verifica se o item foi coletado
 			if pygame.sprite.spritecollide(player, coin_group, True):
 				score += 1
+				coin_effect.play()
 			draw_text(' X ' + str(score), font_score, white, tile_size - 10, 10)
 
 		enemy_group.draw(screen)
