@@ -3,7 +3,6 @@ import pygame
 import pickle
 from os import path
 from pygame import mixer
-from pygame.locals import *
 
 # Inicialize o Pygame para que possa ser utilizado
 pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -239,7 +238,7 @@ class Player():
 		self.counter = 0
 		# Carrega as imagens do jogador e redimensiona a imagem para 40x80 pixels
 		for num in range(1, 5):
-			image_right = pygame.image.load(f'assets/image/player{num}.png')
+			image_right = pygame.image.load(f'assets/animation/player/player{num}.png')
 			image_right = pygame.transform.scale(image_right, (40, 80))
 			image_left = pygame.transform.flip(image_right, True, False)
 			self.images_right.append(image_right)
