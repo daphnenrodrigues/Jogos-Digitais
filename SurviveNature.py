@@ -29,8 +29,8 @@ font_score = pygame.font.SysFont('Bauhaus 93', 30)
 tile_size = 50
 game_over = 0
 main_menu = True
-level = 0
-max_levels = 1
+level = 7
+max_levels = 7
 score = 0
 
 # Definindo cores
@@ -70,6 +70,7 @@ def draw_text(text, font, text_col, x, y):
 def reset_level(level):
 	player.reset(100, screen_height - 130)
 	enemy_group.empty()
+	platform_group.empty()
 	flood_water_group.empty()
 	exit_group.empty()
 
@@ -119,6 +120,7 @@ class Player():
 		dx = 0
 		dy = 0
 		walk_cooldown = 5
+		col_thresh = 20
 
 		if game_over == 0:
 			# Verifica se alguma tecla foi pressionada
@@ -194,6 +196,25 @@ class Player():
 			if pygame.sprite.spritecollide(self, exit_group, False):
 				game_over = 1
 
+			# Verificando colisão com as plataformas
+			for platform in platform_group:
+				# Colisão na direção do eixo x
+				if platform.rect.colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+					dx = 0
+				# Colisão na direção do eixo y
+				if platform.rect.colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+					# Verifique se está abaixo da plataforma
+					if abs((self.rect.top + dy) - platform.rect.bottom) < col_thresh:
+						self.vel_y = 0
+						dy = platform.rect.bottom - self.rect.top
+					# Verifique se está acima da plataforma
+					elif abs((self.rect.bottom + dy) - platform.rect.top) < col_thresh:
+						self.rect.bottom = platform.rect.top - 1
+						self.in_air = False
+						dy = 0
+					# Mover player lateralmente com a plataforma
+					if platform.move_x != 0:
+						self.rect.x += platform.move_direction
 
 			# Atualiza as coordenadas do jogador
 			self.rect.x += dx
@@ -207,7 +228,7 @@ class Player():
 
 		# Carrega o jogador na tela
 		screen.blit(self.image, self.rect)
-		pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+		#pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
 
 		return game_over
 
@@ -274,6 +295,12 @@ class World():
 				if tile == 3:
 					enemy = Enemy(col_count * tile_size, row_count * tile_size + 15)
 					enemy_group.add(enemy)
+				if tile == 4:
+					platform = Platform(col_count * tile_size, row_count * tile_size, 1, 0)
+					platform_group.add(platform)
+				if tile == 5:
+					platform = Platform(col_count * tile_size, row_count * tile_size, 0, 1)
+					platform_group.add(platform)
 				if tile == 6:
 					flood_water = FloodWater(col_count * tile_size, row_count * tile_size + (tile_size // 2))
 					flood_water_group.add(flood_water)
@@ -291,7 +318,7 @@ class World():
 	def draw(self):
 		for tile in self.tile_list:
 			screen.blit(tile[0], tile[1])
-			pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
+			#pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -306,6 +333,28 @@ class Enemy(pygame.sprite.Sprite):
 
 	def update(self):
 		self.rect.x += self.move_direction
+		self.move_counter += 1
+		if abs(self.move_counter) > 50:
+			self.move_direction *= -1
+			self.move_counter *= -1
+
+
+class Platform(pygame.sprite.Sprite):
+	def __init__(self, x, y, move_x, move_y):
+		pygame.sprite.Sprite.__init__(self)
+		image = pygame.image.load('assets/image/platform.png')
+		self.image = pygame.transform.scale(image, (tile_size, tile_size // 2))
+		self.rect = self.image.get_rect()
+		self.rect.x = x
+		self.rect.y = y
+		self.move_counter = 0
+		self.move_direction = 1
+		self.move_x = move_x
+		self.move_y = move_y
+
+	def update(self):
+		self.rect.x += self.move_direction * self.move_x
+		self.rect.y += self.move_direction * self.move_y
 		self.move_counter += 1
 		if abs(self.move_counter) > 50:
 			self.move_direction *= -1
@@ -345,6 +394,7 @@ class Exit(pygame.sprite.Sprite):
 player = Player(100, screen_height - 130)
 
 enemy_group = pygame.sprite.Group()
+platform_group = pygame.sprite.Group()
 flood_water_group = pygame.sprite.Group()
 coin_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
@@ -384,6 +434,7 @@ while run:
 		# Se o jogador estiver vivo
 		if game_over == 0:
 			enemy_group.update()
+			platform_group.update()
 			# Atualizando a pontuação
 			# Verifica se o item foi coletado
 			if pygame.sprite.spritecollide(player, coin_group, True):
@@ -392,6 +443,7 @@ while run:
 			draw_text(' X ' + str(score), font_score, white, tile_size - 10, 10)
 
 		enemy_group.draw(screen)
+		platform_group.draw(screen)
 		flood_water_group.draw(screen)
 		coin_group.draw(screen)
 		exit_group.draw(screen)
