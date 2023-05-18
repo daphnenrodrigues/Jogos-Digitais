@@ -399,17 +399,17 @@ class HealthBar(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.images_live = []
-        self.index = 5
         for num in range(0, 6):
             image_live = pygame.image.load(f'assets/animation/health/coracao{num}.png')
-            image_live = pygame.transform.scale(image_live, (tile_size * 2.2, tile_size // 1.5))
+            image_live = pygame.transform.scale(image_live, (tile_size * 2.9, tile_size ))
             self.images_live.append(image_live)
-        self.image = self.images_live[self.index]
+        self.image = self.images_live[player.lives]
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
 
     def draw(self, screen):
+        self.image = self.images_live[player.lives]
         screen.blit(self.image, self.rect)
         #pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
 
@@ -435,7 +435,7 @@ coin_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 
 # Criando moeda fictícia para mostrar na pontuação
-score_coin = Coin(tile_size // 2, 3 * (tile_size // 2))
+score_coin = Coin((tile_size // 2) + 5, 3.5 * (tile_size // 2))
 coin_group.add(score_coin)
 
 # Cria um objeto World com dados de mapa em 'world_data'
@@ -473,11 +473,10 @@ while run:
             # Atualizando a pontuação
             # Verifica se o item foi coletado
             print("player.lives = " + str(player.lives))
-            print("vida.index = " + str(vida.index))
             if pygame.sprite.spritecollide(player, coin_group, True):
                 score += 1
                 coin_effect.play()
-            draw_text(' X ' + str(score), font_score, white, tile_size - 10, tile_size + 10)
+            draw_text(' X ' + str(score), font_score, white, tile_size - 5, tile_size + 21)
 
         enemy_group.draw(screen)
         platform_group.draw(screen)
@@ -491,7 +490,6 @@ while run:
         # Se o jogador morrer
         if game_over == -1:
             player.lives -= 1
-            vida.index -= 1
             if player.lives > 0:
                 world_data = []
                 world = reset_level(level)
