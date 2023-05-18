@@ -13,8 +13,8 @@ clock = pygame.time.Clock()
 fps = 60
 
 # Defina a largura e a altura da tela do jogo
-screen_width = 1000
-screen_height = 1000
+screen_width = 1920
+screen_height = 1080
 
 # Crie uma janela do Pygame com as dimensões especificadas anteriormente e defina o título da janela do jogo
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -129,6 +129,7 @@ class Player:
         self.in_air = None
         self.reset(x, y)
         self.lives = 5
+        self.score = 0
 
     def update(self, game_over):
         dx = 0
@@ -242,7 +243,7 @@ class Player:
 
         # Carrega o jogador na tela
         screen.blit(self.image, self.rect)
-        #pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+        pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
 
         return game_over
 
@@ -332,7 +333,7 @@ class World:
     def draw(self):
         for tile in self.tile_list:
             screen.blit(tile[0], tile[1])
-            #pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
+            pygame.draw.rect(screen, (255, 255, 255), tile[1], 2)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -394,6 +395,25 @@ class Coin(pygame.sprite.Sprite):
         self.rect.center = (x, y)
 
 
+class HealthBar(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.images_live = []
+        self.index = 5
+        for num in range(0, 6):
+            image_live = pygame.image.load(f'assets/animation/health/coracao{num}.png')
+            image_live = pygame.transform.scale(image_live, (tile_size * 2.2, tile_size // 1.5))
+            self.images_live.append(image_live)
+        self.image = self.images_live[self.index]
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+        #pygame.draw.rect(screen, (255, 255, 255), self.rect, 2)
+
+
 class Exit(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -406,6 +426,7 @@ class Exit(pygame.sprite.Sprite):
 
 # Cria um objeto Player com posição inicial
 player = Player(100, screen_height - 130)
+vida = HealthBar((tile_size // 2) - 15, 15)
 
 enemy_group = pygame.sprite.Group()
 platform_group = pygame.sprite.Group()
@@ -414,7 +435,7 @@ coin_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 
 # Criando moeda fictícia para mostrar na pontuação
-score_coin = Coin(tile_size // 2, tile_size // 2)
+score_coin = Coin(tile_size // 2, 3 * (tile_size // 2))
 coin_group.add(score_coin)
 
 # Cria um objeto World com dados de mapa em 'world_data'
@@ -442,7 +463,7 @@ while run:
         if start_button.draw():
             main_menu = False
     else:
-        # Desenha o mundo na tela e atualiza a posição do jogador
+        # Desenha o mundo na tela
         world.draw()
 
         # Se o jogador estiver vivo
@@ -451,26 +472,33 @@ while run:
             platform_group.update()
             # Atualizando a pontuação
             # Verifica se o item foi coletado
+            print("player.lives = " + str(player.lives))
+            print("vida.index = " + str(vida.index))
             if pygame.sprite.spritecollide(player, coin_group, True):
                 score += 1
                 coin_effect.play()
-            draw_text(' X ' + str(score), font_score, white, tile_size - 10, 10)
+            draw_text(' X ' + str(score), font_score, white, tile_size - 10, tile_size + 10)
 
         enemy_group.draw(screen)
         platform_group.draw(screen)
         flood_water_group.draw(screen)
         coin_group.draw(screen)
         exit_group.draw(screen)
+        vida.draw(screen)
 
         game_over = player.update(game_over)
 
         # Se o jogador morrer
         if game_over == -1:
-            if restart_button.draw():
+            player.lives -= 1
+            vida.index -= 1
+            if player.lives > 0:
                 world_data = []
                 world = reset_level(level)
                 game_over = 0
+            else:
                 score = 0
+                #if restart_button.draw():
 
         # Se o jogador ganhar a fase
         if game_over == 1:
@@ -481,6 +509,8 @@ while run:
                 world_data = []
                 world = reset_level(level)
                 game_over = 0
+                player.score += score
+                score = 0
             else:
                 draw_text('Você Ganhou!', font, blue, (screen_width // 2) - 200, screen_height // 2)
                 # Resetar o jogo
