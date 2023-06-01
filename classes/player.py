@@ -26,6 +26,8 @@ class Player:
         self.game_over_effect.set_volume(0.5)
         self.game = game
         self.death_time = None
+        self.y_death = None
+        self.time_ghost_rising = 3
 
     def update(self, game_over):
         dx = 0

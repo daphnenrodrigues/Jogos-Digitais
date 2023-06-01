@@ -88,7 +88,14 @@ class Game:
         while self.playing:
             self.check_events()
             if self.START_KEY:
+                self.player.score = 0
+                self.player.lives = 5
+                self.game_over = 0
+                self.curr_menu = self.main_menu
                 self.playing = False
+                self.player.death_time = None
+                self.player.y_death = None
+                self.score = 0
 
             Game.clock.tick(self.fps)
 
@@ -129,15 +136,15 @@ class Game:
                 if self.player.death_time is None:
                     self.player.death_time = time()
                     self.player.image = self.player.dead_image
-                    player_y_death = self.player.rect.y
-                    time_ghost_rising = 3
-                if time() - self.player.death_time < time_ghost_rising:
-                    self.player.rect.y = (1 - ((time() - self.player.death_time) / time_ghost_rising)) * player_y_death
-                    self.player.rect.x += 4 * sin(2 * 2 * pi * (time() - self.player.death_time) / time_ghost_rising)
+                    self.player.y_death = self.player.rect.y
+                if time() - self.player.death_time < self.player.time_ghost_rising:
+                    self.player.rect.y = (1 - ((time() - self.player.death_time) / self.player.time_ghost_rising)) * self.player.y_death
+                    self.player.rect.x += 4 * sin(2 * 2 * pi * (time() - self.player.death_time) / self.player.time_ghost_rising)
                     Game.screen.blit(self.player.image, self.player.rect)
                 else:
                     self.player.lives -= 1
                     self.player.death_time = None
+                    self.player.y_death = None
                     self.score = 0
                     if self.player.lives > 0:
                         self.world = reset_level(self)
