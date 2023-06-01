@@ -1,8 +1,8 @@
 import pygame
 
 # Defina as variáveis do jogo
-screen_width = 1920
-screen_height = 1080
+screen_width = 1900
+screen_height = 1050
 tile_size = 50
 
 # Defina as cores

@@ -8,11 +8,6 @@ import classes.utils as const
 pygame.mixer.pre_init(44100, -16, 2, 512)
 mixer.init()
 
-# Carregue os sons do jogo
-coin_effect = pygame.mixer.Sound('assets/audio/coin.wav')
-coin_effect.set_volume(0.5)
-
-
 pygame.mixer.music.load('assets/audio/music.wav')
 pygame.mixer.music.play(-1, 0.0, 5000)
 

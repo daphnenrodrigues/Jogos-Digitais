@@ -25,6 +25,7 @@ class Player:
         self.game_over_effect = pygame.mixer.Sound('assets/audio/game_over.wav')
         self.game_over_effect.set_volume(0.5)
         self.game = game
+        self.death_time = None
 
     def update(self, game_over):
         dx = 0
@@ -58,7 +59,7 @@ class Player:
                     self.image = self.images_left[self.index]
 
             # Animação
-            if self.counter > walk_cooldown:
+            if self.counter > walk_cooldown and self.death_time is not None:
                 self.counter = 0
                 self.index += 1
                 if self.index >= len(self.images_right):
@@ -76,19 +77,21 @@ class Player:
 
             # Adicionando colisão
             self.in_air = True
-            for tile in self.game.world.tile_list:
+            for tile_num, (_, tile_rect) in self.game.world.tile_list:
+                if tile_num == 50 or tile_num == 49:
+                    continue
                 # Verificando colisão no eixo x
-                if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
+                if tile_rect.colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
                     dx = 0
                 # Verificando colisão no eixo y
-                if tile[1].colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+                if tile_rect.colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
                     # Verificando se abaixo do solo, ou seja, pulando
                     if self.vel_y < 0:
-                        dy = tile[1].bottom - self.rect.top
+                        dy = tile_rect.bottom - self.rect.top
                         self.vel_y = 0
                     # Verificando se está acima do solo, ou seja, caindo
                     elif self.vel_y >= 0:
-                        dy = tile[1].top - self.rect.bottom
+                        dy = tile_rect.top - self.rect.bottom
                         self.vel_y = 0
                         self.in_air = False
 
@@ -129,11 +132,6 @@ class Player:
             # Atualiza as coordenadas do jogador
             self.rect.x += dx
             self.rect.y += dy
-
-        elif game_over == -1:
-            self.image = self.dead_image
-            if self.rect.y > 200:
-                self.rect.y -= 5
 
         # Carrega o jogador na tela
         self.game.screen.blit(self.image, self.rect)

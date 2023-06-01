@@ -8,6 +8,8 @@ from classes.player import Player
 from classes.healthBar import HealthBar
 from classes.world import World
 from classes.coin import Coin
+from time import time
+from math import sin, pi
 import classes.utils as const
 
 
@@ -49,7 +51,7 @@ class Game:
         self.display = pygame.Surface((const.screen_width, const.screen_height))
         # Carregue as imagens a partir do diretório especificado
         self.sun_image = pygame.image.load('assets/image/sun.png')
-        self.background_image = pygame.image.load('assets/image/sky.png')
+        self.background_image = pygame.image.load('assets/image/sky.jpg')
         #Defina o título da janela do jogo
         pygame.display.set_caption('SurviveNature')
         # Definido fonte.
@@ -75,10 +77,10 @@ class Game:
         self.coin_effect = pygame.mixer.Sound('assets/audio/coin.wav')
         self.coin_effect.set_volume(0.5)
         #
-        self.max_levels = 7
+        self.max_levels = 3
         self.game_over = 0
-        self.main_menu = True
-        self.level = 7
+        #self.main_menu = True
+        self.level = 1
         self.score = 0
 
     def game_loop(self):
@@ -94,65 +96,73 @@ class Game:
             Game.screen.blit(self.background_image, (0, 0))
             Game.screen.blit(self.sun_image, (100, 100))
 
-            if self.main_menu:
-                self.main_menu = False
-            else:
-                # Desenha o mundo na tela
-                self.world.draw()
+            # Se o jogador estiver vivo
+            if self.game_over == 0:
+                self.enemy_group.update()
+                self.platform_group.update()
+                # Atualizando a pontuação
+                # Verifica se o item foi coletado
+                print('player.lives = ' + str(self.player.lives))
+                if pygame.sprite.spritecollide(self.player, self.coin_group, True):
+                    self.score += 1
+                    self.coin_effect.play()
+                # Criando moeda fictícia para mostrar na pontuação
+                score_coin = Coin((const.tile_size // 2) + 5, 3.5 * (const.tile_size // 2))
+                self.coin_group.add(score_coin)
+            draw_text(f' X {self.player.score + self.score}', self.font_score, const.white, const.tile_size - 5, const.tile_size + 21)
 
-                # Se o jogador estiver vivo
-                if self.game_over == 0:
-                    self.enemy_group.update()
-                    self.platform_group.update()
-                    # Atualizando a pontuação
-                    # Verifica se o item foi coletado
-                    print('player.lives = ' + str(self.player.lives))
-                    if pygame.sprite.spritecollide(self.player, self.coin_group, True):
-                        self.score += 1
-                        self.coin_effect.play()
-                    # Criando moeda fictícia para mostrar na pontuação
-                    score_coin = Coin((const.tile_size // 2) + 5, 3.5 * (const.tile_size // 2))
-                    self.coin_group.add(score_coin)
-                    draw_text(' X ' + str(self.score), self.font_score, const.white, const.tile_size - 5, const.tile_size + 21)
+            self.enemy_group.draw(Game.screen)
+            self.platform_group.draw(Game.screen)
+            self.flood_water_group.draw(Game.screen)
+            self.exit_group.draw(Game.screen)
 
-                self.enemy_group.draw(Game.screen)
-                self.platform_group.draw(Game.screen)
-                self.flood_water_group.draw(Game.screen)
-                self.coin_group.draw(Game.screen)
-                self.exit_group.draw(Game.screen)
-                self.vida.draw(Game.screen, self.player.lives)
+            self.game_over = self.player.update(self.game_over)
 
-                self.game_over = self.player.update(self.game_over)
+            # Desenha o mundo na tela
+            self.world.draw()
 
-                # Se o jogador perder uma vida
-                if self.game_over == -1:
+            self.vida.draw(Game.screen, self.player.lives)
+            self.coin_group.draw(Game.screen)
+
+            # Se o jogador perder uma vida
+            if self.game_over == -1:
+                if self.player.death_time is None:
+                    self.player.death_time = time()
+                    self.player.image = self.player.dead_image
+                    player_y_death = self.player.rect.y
+                    time_ghost_rising = 3
+                if time() - self.player.death_time < time_ghost_rising:
+                    self.player.rect.y = (1 - ((time() - self.player.death_time) / time_ghost_rising)) * player_y_death
+                    self.player.rect.x += 4 * sin(2 * 2 * pi * (time() - self.player.death_time) / time_ghost_rising)
+                    Game.screen.blit(self.player.image, self.player.rect)
+                else:
                     self.player.lives -= 1
+                    self.player.death_time = None
+                    self.score = 0
                     if self.player.lives > 0:
                         self.world = reset_level(self)
                         self.game_over = 0
                     else:
-                        score = 0
+                        self.player.score = 0
+                        self.player.lives = 5
+                        self.game_over = 0
+                        self.curr_menu = self.main_menu
+                        self.playing = False
+
                         # if restart_button.draw():
 
-                # Se o jogador ganhar a fase
-                if self.game_over == 1:
-                    # Resetar o jogo e ir para a proxima fase
-                    self.level += 1
-                    if self.level <= self.max_levels:
-                        # Resetar fase
-                        self.world = reset_level(self)
-                        self.game_over = 0
-                        self.player.score += score
-                        score = 0
-                    else:
-                        draw_text('Você Ganhou!', self.font, const.blue, (const.screen_width // 2) - 200, const.screen_height // 2)
-                        # Resetar o jogo
-                        if const.restart_button.draw():
-                            self.level = 1
-                            # Resetar fase
-                            self.world = reset_level(self)
-                            self.game_over = 0
-                            score = 0
+            # Se o jogador ganhar a fase
+            if self.game_over == 1:
+                # Resetar o jogo e ir para a proxima fase
+                self.level += 1
+                if self.level <= self.max_levels:
+                    # Resetar fase
+                    self.world = reset_level(self)
+                    self.game_over = 0
+                    self.player.score += self.score
+                    self.score = 0
+                else:
+                    draw_text('Você Ganhou!', self.font, const.blue, (const.screen_width // 2) - 200, const.screen_height // 2)
 
             pygame.display.update()
             self.reset_keys()
