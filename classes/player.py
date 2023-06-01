@@ -59,7 +59,7 @@ class Player:
                     self.image = self.images_left[self.index]
 
             # Animação
-            if self.counter > walk_cooldown and self.death_time is not None:
+            if self.counter > walk_cooldown and self.death_time is None:
                 self.counter = 0
                 self.index += 1
                 if self.index >= len(self.images_right):
